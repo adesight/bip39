@@ -34,6 +34,30 @@ func TestValidateMnemonic(t *testing.T) {
 			want: true,
 		},
 		{
+			name: "EnglishValidLength",
+			args: args{
+				mnemonic: "rich soon pool legal busy add couch tower goose security raven",
+				lang:     bip39.English,
+			},
+			want: false,
+		},
+		{
+			name: "EnglishNoWord",
+			args: args{
+				mnemonic: "rich soon pool legal busy add couch tower goose security women",
+				lang:     bip39.English,
+			},
+			want: false,
+		},
+		{
+			name: "EnglishChecksumError",
+			args: args{
+				mnemonic: "rich soon pool legal busy add couch tower goose security base",
+				lang:     bip39.English,
+			},
+			want: false,
+		},
+		{
 			name: "ChineseSimplified",
 			args: args{
 				mnemonic: "氮 冠 锋 枪 做 到 容 枯 获 槽 弧 部",
