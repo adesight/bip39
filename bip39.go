@@ -58,15 +58,15 @@ func NewBip39ByMnemonic(mnemonic string, lang Language, password string) (*Bip39
 func NewBip39ByEntropy(entropy []byte, lang Language, password string) (*Bip39, error) {
 	var length int
 	switch len(entropy) {
-	case 128:
+	case 16:
 		length = 12
-	case 160:
+	case 20:
 		length = 15
-	case 192:
+	case 24:
 		length = 18
-	case 224:
+	case 28:
 		length = 21
-	case 256:
+	case 32:
 		length = 24
 	default:
 		return nil, ErrEntropyLen
@@ -98,7 +98,7 @@ func (b *Bip39) NewMnemonic() (string, error) {
 		|  224  |  7 |   231  |  21  |
 		|  256  |  8 |   264  |  24  |
 	*/
-	entBitsLen := b.length * 11 / (1 + 1/32)
+	entBitsLen := b.length * 352 / 33
 	entropy := make([]byte, entBitsLen/8)
 	if _, err := rand.Read(entropy); err != nil {
 		return "", err
@@ -108,7 +108,8 @@ func (b *Bip39) NewMnemonic() (string, error) {
 
 // NewMnemonicByEntroy creates new menemonic by entroy provied
 func (b *Bip39) NewMnemonicByEntroy(entropy []byte) (string, error) {
-	entBitsLen := b.length * 11 / (1 + 1/32)
+	// b.length * 11 / (1 + 1/32)
+	entBitsLen := b.length * 352 / 33
 	if entBitsLen/8 != len(entropy) {
 		return "", ErrEntropyLen
 	}
@@ -141,6 +142,11 @@ func (b *Bip39) NewMnemonicByEntroy(entropy []byte) (string, error) {
 		b.menemonic = strings.Join(words, "\x20")
 	}
 	return b.menemonic, nil
+}
+
+// Mnemonic get created mnemonic
+func (b *Bip39) Mnemonic() string {
+	return b.menemonic
 }
 
 // Seed gets bip32 root seed
@@ -190,7 +196,7 @@ func ValidateMnemonic(mnemonic string, lang Language) bool {
 	res := tmp.String()
 	binLen := len(res)
 
-	entBitsLen := len(wordList) * 11 / (1 + 1/32)
+	entBitsLen := len(wordList) * 352 / 33
 	csBitsLen := entBitsLen / 32
 
 	entBytes := make([]byte, 0, (entBitsLen-csBitsLen)/8)
