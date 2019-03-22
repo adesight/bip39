@@ -121,7 +121,7 @@ func (b *Bip39) Seed() ([]byte, error) {
 		password := []byte(norm.NFKD.String(b.menemonic))
 		salt := []byte(norm.NFKD.String("menemonic" + b.password))
 		defer close(reschan)
-		reschan <- pbkdf2.Key(password, salt, 2018, 64, sha512.New)
+		reschan <- pbkdf2.Key(password, salt, 2048, 64, sha512.New)
 	}()
 	return <-reschan, nil
 }
