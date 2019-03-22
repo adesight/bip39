@@ -34,11 +34,8 @@ func (lan Language) List() []string {
 		return wordlist.Japanese
 	case Spanish:
 		return wordlist.Spanish
+	case Korean:
+		return wordlist.Korean
 	}
 	return nil
-}
-
-// Mapping gets word mapping
-func (lan Language) Mapping() {
-
 }
