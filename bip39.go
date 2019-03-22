@@ -119,7 +119,7 @@ func (b *Bip39) Seed() ([]byte, error) {
 	reschan := make(chan []byte)
 	go func() {
 		password := []byte(norm.NFKD.String(b.menemonic))
-		salt := []byte(norm.NFKD.String(b.menemonic + b.password))
+		salt := []byte(norm.NFKD.String("menemonic" + b.password))
 		defer close(reschan)
 		reschan <- pbkdf2.Key(password, salt, 2018, 64, sha512.New)
 	}()
