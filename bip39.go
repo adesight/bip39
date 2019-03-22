@@ -102,13 +102,12 @@ func (b *Bip39) NewMnemonicByEntroy(entropy []byte) (string, error) {
 		wordBytes := padByteSlice(word.Bytes(), 2)
 		words[i] = b.language.List()[binary.BigEndian.Uint16(wordBytes)]
 	}
-	var mnemonic string
 	if b.language == Japanese {
-		mnemonic = strings.Join(words, "\u3000")
+		b.menemonic = strings.Join(words, "\u3000")
+	} else {
+		b.menemonic = strings.Join(words, "\x20")
 	}
-	mnemonic = strings.Join(words, "\x20")
-	b.menemonic = mnemonic
-	return mnemonic, nil
+	return b.menemonic, nil
 }
 
 // Seed gets bip32 root seed
@@ -129,11 +128,20 @@ func (b *Bip39) Seed() ([]byte, error) {
 // ValidateMnemonic validate menemonic
 func ValidateMnemonic(mnemonic string, lang Language) bool {
 	mnemonic = norm.NFKD.String(mnemonic)
+
+	wordList := strings.Split(mnemonic, "\x20")
+
+	wordCount := len(wordList)
+	if wordCount%3 != 0 || wordCount < 12 || wordCount > 24 {
+		return false
+	}
+
 	words := make(map[string]struct{})
 	for _, v := range lang.List() {
 		words[v] = struct{}{}
 	}
-	for _, v := range strings.Split(mnemonic, "\x20") {
+
+	for _, v := range wordList {
 		if _, ok := words[v]; !ok {
 			return false
 		}
