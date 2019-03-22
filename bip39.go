@@ -5,9 +5,9 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/sha512"
-	"encoding/binary"
 	"errors"
-	"math/big"
+	"fmt"
+	"strconv"
 	"strings"
 
 	"golang.org/x/crypto/pbkdf2"
@@ -24,9 +24,10 @@ type Bip39 struct {
 
 // Error list
 var (
-	ErrWordLen       = errors.New("Invalid word list length")
-	ErrEntropyLen    = errors.New("Invalid entropy length")
-	ErrUnIntMnemonic = errors.New("Mnemonic is empty")
+	ErrWordLen        = errors.New("Invalid word list length")
+	ErrEntropyLen     = errors.New("Invalid entropy length")
+	ErrUnIntMnemonic  = errors.New("Mnemonic is empty")
+	ErrInvlidMnemonic = errors.New("Invlid mnemonic")
 )
 
 // NewBip39 create new Bip39 instance
@@ -37,6 +38,49 @@ func NewBip39(mlen int, lang Language, password string) (*Bip39, error) {
 		return nil, ErrWordLen
 	}
 	ins := &Bip39{length: mlen, language: lang, password: password}
+	return ins, nil
+}
+
+// NewBip39ByMnemonic create new Bip39 instance by mnemonic
+func NewBip39ByMnemonic(mnemonic string, lang Language, password string) (*Bip39, error) {
+	if !ValidateMnemonic(mnemonic, lang) {
+		return nil, ErrInvlidMnemonic
+	}
+
+	ins := &Bip39{
+		length:    len(strings.Split(norm.NFKD.String(mnemonic), "\x20")),
+		menemonic: mnemonic, password: password, language: lang,
+	}
+	return ins, nil
+}
+
+// NewBip39ByEntropy create new Bip39 instance by entropy
+func NewBip39ByEntropy(entropy []byte, lang Language, password string) (*Bip39, error) {
+	var length int
+	switch len(entropy) {
+	case 128:
+		length = 12
+	case 160:
+		length = 15
+	case 192:
+		length = 18
+	case 224:
+		length = 21
+	case 256:
+		length = 24
+	default:
+		return nil, ErrEntropyLen
+	}
+
+	ins := &Bip39{
+		length:   length,
+		language: lang,
+		password: password,
+	}
+
+	if _, err := ins.NewMnemonicByEntroy(entropy); err != nil {
+		return nil, err
+	}
 	return ins, nil
 }
 
@@ -54,8 +98,8 @@ func (b *Bip39) NewMnemonic() (string, error) {
 		|  224  |  7 |   231  |  21  |
 		|  256  |  8 |   264  |  24  |
 	*/
-	entBits := b.length * 11 / (1 + 1/32)
-	entropy := make([]byte, entBits/8)
+	entBitsLen := b.length * 11 / (1 + 1/32)
+	entropy := make([]byte, entBitsLen/8)
 	if _, err := rand.Read(entropy); err != nil {
 		return "", err
 	}
@@ -65,43 +109,32 @@ func (b *Bip39) NewMnemonic() (string, error) {
 // NewMnemonicByEntroy creates new menemonic by entroy provied
 func (b *Bip39) NewMnemonicByEntroy(entropy []byte) (string, error) {
 	entBitsLen := b.length * 11 / (1 + 1/32)
-	if entBitsLen != len(entropy) {
+	if entBitsLen/8 != len(entropy) {
 		return "", ErrEntropyLen
 	}
 
-	csBits := entBitsLen / 32
+	var binEnt strings.Builder
+	for _, v := range entropy {
+		tmp := fmt.Sprintf("%08b", v)
+		binEnt.WriteString(tmp)
+	}
+
 	hash := sha256.New()
 	hash.Write(entropy)
-	firstCsByte := hash.Sum(nil)[0]
+	binEnt.WriteString(fmt.Sprintf("%08b", hash.Sum(nil)[0])[:entBitsLen/32])
 
-	dataBigInt := new(big.Int).SetBytes(entropy)
+	strEnt := binEnt.String()
 
-	for i := 0; i < csBits; i++ {
-		dataBigInt.Mul(dataBigInt, big.NewInt(2))
-		if uint8(firstCsByte&(1<<(7-uint(i)))) > 0 {
-			dataBigInt.Or(dataBigInt, big.NewInt(1))
+	words := make([]string, 0, b.length)
+	wordList := b.language.List()
+	for i := 0; i < len(strEnt); i += 11 {
+		idx, err := strconv.ParseInt(strEnt[i:i+11], 2, 32)
+		if err != nil {
+			return "", err
 		}
+		words = append(words, wordList[idx])
 	}
 
-	var padByteSlice = func(slice []byte, length int) []byte {
-		offset := length - len(slice)
-		if offset <= 0 {
-			return slice
-		}
-		newSlice := make([]byte, length)
-		copy(newSlice[offset:], slice)
-		return newSlice
-	}
-
-	words := make([]string, b.length)
-	word := big.NewInt(0)
-
-	for i := b.length - 1; i >= 0; i-- {
-		word.And(dataBigInt, big.NewInt(2047))
-		dataBigInt.Div(dataBigInt, big.NewInt(2048))
-		wordBytes := padByteSlice(word.Bytes(), 2)
-		words[i] = b.language.List()[binary.BigEndian.Uint16(wordBytes)]
-	}
 	if b.language == Japanese {
 		b.menemonic = strings.Join(words, "\u3000")
 	} else {
@@ -118,7 +151,7 @@ func (b *Bip39) Seed() ([]byte, error) {
 	reschan := make(chan []byte)
 	go func() {
 		password := []byte(norm.NFKD.String(b.menemonic))
-		salt := []byte(norm.NFKD.String("menemonic" + b.password))
+		salt := []byte(norm.NFKD.String("mnemonic" + b.password))
 		defer close(reschan)
 		reschan <- pbkdf2.Key(password, salt, 2048, 64, sha512.New)
 	}()
@@ -128,7 +161,6 @@ func (b *Bip39) Seed() ([]byte, error) {
 // ValidateMnemonic validate menemonic
 func ValidateMnemonic(mnemonic string, lang Language) bool {
 	mnemonic = norm.NFKD.String(mnemonic)
-
 	wordList := strings.Split(mnemonic, "\x20")
 
 	wordCount := len(wordList)
@@ -136,16 +168,41 @@ func ValidateMnemonic(mnemonic string, lang Language) bool {
 		return false
 	}
 
-	words := make(map[string]struct{})
-	for _, v := range lang.List() {
-		words[v] = struct{}{}
+	// record index of word
+	words := make(map[string]int)
+	for idx, v := range lang.List() {
+		words[v] = idx
 	}
 
+	var tmp strings.Builder
 	for _, v := range wordList {
-		if _, ok := words[v]; !ok {
+		idx, has := words[v]
+		if !has {
 			return false
 		}
+		x := fmt.Sprintf("%08b", idx)
+		if rpt := 11 - len(x); rpt != 0 {
+			x = strings.Repeat("0", rpt) + x
+		}
+		tmp.WriteString(x)
 	}
-	// TODO(islishude): validate checksum
-	return true
+
+	res := tmp.String()
+	binLen := len(res)
+
+	entBitsLen := len(wordList) * 11 / (1 + 1/32)
+	csBitsLen := entBitsLen / 32
+
+	entBytes := make([]byte, 0, (entBitsLen-csBitsLen)/8)
+	for i := 0; i < binLen-4; i += 8 {
+		b, err := strconv.ParseInt(res[i:i+8], 2, 32)
+		if err != nil {
+			return false
+		}
+		entBytes = append(entBytes, byte(b))
+	}
+
+	hash := sha256.New()
+	hash.Write(entBytes)
+	return res[binLen-4:binLen] == fmt.Sprintf("%08b", hash.Sum(nil)[0])[:csBitsLen]
 }
