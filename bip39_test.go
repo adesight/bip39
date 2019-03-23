@@ -387,7 +387,9 @@ func ExampleNewMnemonic() {
 }
 
 func ExampleMnemonicToSeed() {
-	mnemonic := "jungle devote wisdom slim census orbit merge order flip sketch add mass"
+	mnemonic := "jungle devote wisdom slim" +
+		" census orbit merge order flip sketch add mass"
+
 	fmt.Println(ValidateMnemonic(mnemonic, English))
 
 	// Output:

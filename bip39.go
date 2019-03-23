@@ -91,7 +91,8 @@ func entropyToMnemonic(entropy []byte, wordsLen int, lang Language) (string, err
 	return strings.Join(words, "\x20"), nil
 }
 
-// MnemonicToSeed creates seed by mnemonic
+// MnemonicToSeed creates seed by mnemonic.
+// param passwd can be empty string
 func MnemonicToSeed(mnemonic string, passwd string) ([]byte, error) {
 	if mnemonic == "" {
 		return nil, ErrInvalidMnemonic
