@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestValidateMnemonic(t *testing.T) {
+func TestIsMnemonicValid(t *testing.T) {
 	type args struct {
 		mnemonic string
 		lang     Language
@@ -116,17 +116,17 @@ func TestValidateMnemonic(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := ValidateMnemonic(tt.args.mnemonic, tt.args.lang); got != tt.want {
-				t.Errorf("ValidateMnemonic() = %v, want %v", got, tt.want)
+			if got := IsMnemonicValid(tt.args.mnemonic, tt.args.lang); got != tt.want {
+				t.Errorf("IsMnemonicValid() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func ExampleValidateMnemonic() {
+func ExampleIsMnemonicValid() {
 	var mnemonic = "check fiscal fit sword unlock" +
 		" rough lottery tool sting pluck bulb random"
-	fmt.Println(ValidateMnemonic(mnemonic, English))
+	fmt.Println(IsMnemonicValid(mnemonic, English))
 
 	// Output:
 	// true
@@ -390,7 +390,7 @@ func ExampleMnemonicToSeed() {
 	mnemonic := "jungle devote wisdom slim" +
 		" census orbit merge order flip sketch add mass"
 
-	fmt.Println(ValidateMnemonic(mnemonic, English))
+	fmt.Println(IsMnemonicValid(mnemonic, English))
 
 	// Output:
 	// true

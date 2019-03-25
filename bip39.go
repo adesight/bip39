@@ -107,8 +107,8 @@ func MnemonicToSeed(mnemonic string, passwd string) ([]byte, error) {
 	return <-reschan, nil
 }
 
-// ValidateMnemonic validate menemonic
-func ValidateMnemonic(mnemonic string, lang Language) bool {
+// IsMnemonicValid validate menemonic
+func IsMnemonicValid(mnemonic string, lang Language) bool {
 	mnemonic = norm.NFKD.String(mnemonic)
 	wordList := strings.Split(mnemonic, "\x20")
 
