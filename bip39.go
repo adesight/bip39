@@ -21,8 +21,8 @@ var (
 	ErrInvalidMnemonic = errors.New("Invalid mnemonic")
 )
 
-// MnemonicByEntropy generates new mnemonic by entropy provided
-func MnemonicByEntropy(entropy []byte, lang Language) (string, error) {
+// NewMnemonicByEntropy generates new mnemonic by entropy provided
+func NewMnemonicByEntropy(entropy []byte, lang Language) (string, error) {
 	entLen := len(entropy)
 	// 128 <= ENT <= 256
 	if entLen < 16 || entLen > 32 || entLen%4 != 0 {

@@ -222,7 +222,7 @@ func TestMnemonicByEntropy(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := MnemonicByEntropy(tt.args.entropy, tt.args.lang)
+			got, err := NewMnemonicByEntropy(tt.args.entropy, tt.args.lang)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("MnemonicByEntropy() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -396,9 +396,9 @@ func ExampleMnemonicToSeed() {
 	// true
 }
 
-func ExampleMnemonicByEntropy() {
+func ExampleNewMnemonicByEntropy() {
 	entropy, _ := hex.DecodeString("79079bf165e25537e2dce15919440cc4")
-	mnemonic, _ := MnemonicByEntropy(entropy, English)
+	mnemonic, _ := NewMnemonicByEntropy(entropy, English)
 	fmt.Println(mnemonic)
 
 	// Output:
