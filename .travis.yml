@@ -4,8 +4,12 @@ go:
   - "1.10"
   - "1.11"
   - "1.12"
+git:
+  depth: 1
+before_script:
+  - go get -v ./...
 script:
-  - go test -v github.com/adesight/bip39
+  - go test -v -race ./...
 notifications:
   email:
     on_success: "change"
